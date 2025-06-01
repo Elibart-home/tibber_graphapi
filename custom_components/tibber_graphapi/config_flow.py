@@ -35,42 +35,40 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         await api.authenticate()
         _LOGGER.debug("Authentication successful")
 
-        # Then try to get homes to verify we have access
-        homes = await api.execute_gql("""
-            query {
-                viewer {
-                    homes {
-                        id
+        # Then try to get vehicles to verify we have access
+        result = await api.execute_gql("""
+            query getVehicles {
+                me {
+                    myVehicles {
                         vehicles {
                             id
+                            title
                         }
                     }
                 }
             }
         """)
         
-        _LOGGER.debug("Homes query response: %s", homes)
+        _LOGGER.debug("Vehicles query response: %s", result)
         
-        if not homes.get("viewer", {}).get("homes"):
-            _LOGGER.error("No homes found in Tibber account")
-            raise Exception("No homes found")
-            
-        home = homes["viewer"]["homes"][0]
-        if not home.get("vehicles"):
-            _LOGGER.error("No vehicles found in Tibber home")
+        if not result.get("me", {}).get("myVehicles", {}).get("vehicles"):
+            _LOGGER.error("No vehicles found in Tibber account")
             raise Exception("No vehicles found")
-
+            
+        vehicles = result["me"]["myVehicles"]["vehicles"]
         vehicle_index = data.get(CONF_VEHICLE_INDEX, DEFAULT_VEHICLE_INDEX)
-        if vehicle_index >= len(home["vehicles"]):
+        
+        if vehicle_index >= len(vehicles):
             _LOGGER.error("Vehicle index %d is out of range (max: %d)", 
-                         vehicle_index, len(home["vehicles"]) - 1)
+                         vehicle_index, len(vehicles) - 1)
             raise Exception("Invalid vehicle index")
 
+        vehicle = vehicles[vehicle_index]
+        
         # Return info that you want to store in the config entry.
         return {
-            "title": f"Tibber Vehicle {vehicle_index}",
-            "home_id": home["id"],
-            "vehicle_id": home["vehicles"][vehicle_index]["id"]
+            "title": vehicle["title"],
+            "vehicle_id": vehicle["id"]
         }
 
     except Exception as err:
@@ -99,7 +97,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     title=info["title"],
                     data={
                         **user_input,
-                        "home_id": info["home_id"],
                         "vehicle_id": info["vehicle_id"],
                     }
                 )
