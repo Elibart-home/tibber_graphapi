@@ -14,7 +14,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_SCAN_INTERVAL,
     PERCENTAGE,
-    POWER_KILO_WATT,
+    UnitOfPower,
     UnitOfLength,
 )
 from homeassistant.core import HomeAssistant
@@ -61,9 +61,9 @@ async def async_setup_entry(
     await coordinator.async_config_entry_first_refresh()
 
     entities = [
-        TibberVehicleBatterySensor(coordinator),
-        TibberVehicleRangeSensor(coordinator),
-        TibberVehicleChargingPowerSensor(coordinator),
+        TibberVehicleBatterySensor(coordinator, vehicle_index),
+        TibberVehicleRangeSensor(coordinator, vehicle_index),
+        TibberVehicleChargePowerSensor(coordinator, vehicle_index),
     ]
 
     async_add_entities(entities)
@@ -130,15 +130,18 @@ class TibberVehicleBatterySensor(CoordinatorEntity, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = PERCENTAGE
 
-    def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator, vehicle_index: int) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.data[ATTR_VEHICLE_ID]}_battery"
+        self._vehicle_index = vehicle_index
+        self._attr_unique_id = f"tibber_vehicle_{vehicle_index}_battery"
         self._attr_name = "Vehicle Battery Level"
 
     @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
+        if not self.coordinator.data:
+            return None
         return self.coordinator.data.get(ATTR_BATTERY_LEVEL)
 
     @property
@@ -156,33 +159,39 @@ class TibberVehicleRangeSensor(CoordinatorEntity, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = UnitOfLength.KILOMETERS
 
-    def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator, vehicle_index: int) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.data[ATTR_VEHICLE_ID]}_range"
+        self._vehicle_index = vehicle_index
+        self._attr_unique_id = f"tibber_vehicle_{vehicle_index}_range"
         self._attr_name = "Vehicle Range"
 
     @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
+        if not self.coordinator.data:
+            return None
         return self.coordinator.data.get(ATTR_RANGE)
 
-class TibberVehicleChargingPowerSensor(CoordinatorEntity, SensorEntity):
-    """Representation of a vehicle charging power sensor."""
+class TibberVehicleChargePowerSensor(CoordinatorEntity, SensorEntity):
+    """Representation of a vehicle charge power sensor."""
 
     _attr_device_class = SensorDeviceClass.POWER
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = POWER_KILO_WATT
+    _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
 
-    def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator, vehicle_index: int) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
-        self._attr_unique_id = f"{coordinator.data[ATTR_VEHICLE_ID]}_charging_power"
-        self._attr_name = "Vehicle Charging Power"
+        self._vehicle_index = vehicle_index
+        self._attr_unique_id = f"tibber_vehicle_{vehicle_index}_charge_power"
+        self._attr_name = "Vehicle Charge Power"
 
     @property
     def native_value(self) -> float | None:
         """Return the state of the sensor."""
+        if not self.coordinator.data:
+            return None
         return self.coordinator.data.get(ATTR_CHARGING_POWER)
 
     @property
