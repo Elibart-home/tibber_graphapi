@@ -1,0 +1,26 @@
+set_vehicle_soc:
+  name: Set Vehicle State of Charge
+  description: Set the state of charge (SoC) for a vehicle
+  fields:
+    vehicle_id:
+      name: Vehicle ID
+      description: The ID of the vehicle to update
+      required: true
+      selector:
+        text:
+    home_id:
+      name: Home ID
+      description: The ID of the home where the vehicle is registered
+      required: true
+      selector:
+        text:
+    battery_level:
+      name: Battery Level
+      description: The battery level to set (0-100)
+      required: true
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%" 
