@@ -126,61 +126,40 @@ class TibberGraphAPI:
         self._password = password
         self._token = None
         self._headers = {
-            "accept": "application/json",
-            "content-type": "application/json",
-            "User-Agent": "TibberGraphAPI/1.0.0",
+            "Accept-Language": "en",
+            "x-tibber-new-ui": "true",
+            "User-Agent": "Tibber/25.16.0 (versionCode: 2516001Dalvik/2.1.0 (Linux; U; Android 10; Android SDK built for x86_64 Build/QSR1.211112.011))",
+            "Content-Type": "application/x-www-form-urlencoded"
         }
         self._endpoint = "https://app.tibber.com/v4/gql"
+        self._login_url = "https://app.tibber.com/login.credentials"
 
     async def authenticate(self) -> None:
         """Authenticate with Tibber and get JWT token."""
-        auth_mutation = """
-        mutation login($email: String!, $password: String!) {
-            login(email: $email, password: $password) {
-                token
-                refreshToken
-                user {
-                    id
-                }
-            }
-        }
-        """
+        login_data = f"email={self._username}&password={self._password}"
         
-        variables = {
-            "email": self._username,
-            "password": self._password,
-        }
-
         _LOGGER.debug("Attempting to authenticate with Tibber")
         try:
             async with async_timeout.timeout(10):
                 response = await self._session.post(
-                    self._endpoint,
-                    json={
-                        "query": auth_mutation,
-                        "variables": variables,
-                        "operationName": "login"
-                    },
-                    headers=self._headers,
+                    self._login_url,
+                    data=login_data,
+                    headers=self._headers
                 )
                 
                 _LOGGER.debug("Authentication response status: %s", response.status)
-                response_text = await response.text()
-                _LOGGER.debug("Authentication response: %s", response_text)
                 
-                if response.status != 200:
+                if response.status == 200:
+                    data = await response.json()
+                    
+                    # Update headers for subsequent GraphQL requests
+                    self._headers["Content-Type"] = "application/json; charset=utf-8"
+                    self._headers["Authorization"] = data["token"]
+                    self._token = data["token"]
+                    _LOGGER.debug("Successfully authenticated with Tibber")
+                else:
+                    response_text = await response.text()
                     raise Exception(f"Authentication failed: {response.status} - {response_text}")
-                
-                data = await response.json()
-                if "errors" in data:
-                    raise Exception(f"Authentication failed: {data['errors']}")
-                
-                if not data.get("data", {}).get("login", {}).get("token"):
-                    raise Exception("No token received in authentication response")
-                
-                self._token = data["data"]["login"]["token"]
-                self._headers["authorization"] = f"Bearer {self._token}"
-                _LOGGER.debug("Successfully authenticated with Tibber")
 
         except asyncio.TimeoutError as err:
             raise Exception("Authentication timed out") from err
