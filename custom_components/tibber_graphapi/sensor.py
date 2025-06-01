@@ -14,8 +14,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_SCAN_INTERVAL,
     PERCENTAGE,
-    LENGTH_KILOMETERS,
     POWER_KILO_WATT,
+    UnitOfLength,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -154,7 +154,7 @@ class TibberVehicleRangeSensor(CoordinatorEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.DISTANCE
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = LENGTH_KILOMETERS
+    _attr_native_unit_of_measurement = UnitOfLength.KILOMETERS
 
     def __init__(self, coordinator: TibberVehicleDataUpdateCoordinator) -> None:
         """Initialize the sensor."""
