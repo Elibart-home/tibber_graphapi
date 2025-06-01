@@ -126,16 +126,16 @@ class TibberGraphAPI:
         self._password = password
         self._token = None
         self._headers = {
-            "accept": "application/graphql-response+json, application/json",
+            "accept": "application/json",
             "content-type": "application/json",
-            "x-tibber-new-ui": "true",
+            "User-Agent": "TibberGraphAPI/1.0.0",
         }
         self._endpoint = "https://app.tibber.com/v4/gql"
 
     async def authenticate(self) -> None:
         """Authenticate with Tibber and get JWT token."""
         auth_mutation = """
-        mutation Login($email: String!, $password: String!) {
+        mutation login($email: String!, $password: String!) {
             login(email: $email, password: $password) {
                 token
                 refreshToken
@@ -151,45 +151,70 @@ class TibberGraphAPI:
             "password": self._password,
         }
 
-        async with async_timeout.timeout(10):
-            response = await self._session.post(
-                self._endpoint,
-                json={"query": auth_mutation, "variables": variables},
-                headers=self._headers,
-            )
-            
-            if response.status != 200:
-                raise Exception(f"Authentication failed: {response.status}")
-            
-            data = await response.json()
-            if "errors" in data:
-                raise Exception(f"Authentication failed: {data['errors']}")
-            
-            self._token = data["data"]["login"]["token"]
-            self._headers["authorization"] = f"Bearer {self._token}"
+        _LOGGER.debug("Attempting to authenticate with Tibber")
+        try:
+            async with async_timeout.timeout(10):
+                response = await self._session.post(
+                    self._endpoint,
+                    json={
+                        "query": auth_mutation,
+                        "variables": variables,
+                        "operationName": "login"
+                    },
+                    headers=self._headers,
+                )
+                
+                _LOGGER.debug("Authentication response status: %s", response.status)
+                response_text = await response.text()
+                _LOGGER.debug("Authentication response: %s", response_text)
+                
+                if response.status != 200:
+                    raise Exception(f"Authentication failed: {response.status} - {response_text}")
+                
+                data = await response.json()
+                if "errors" in data:
+                    raise Exception(f"Authentication failed: {data['errors']}")
+                
+                if not data.get("data", {}).get("login", {}).get("token"):
+                    raise Exception("No token received in authentication response")
+                
+                self._token = data["data"]["login"]["token"]
+                self._headers["authorization"] = f"Bearer {self._token}"
+                _LOGGER.debug("Successfully authenticated with Tibber")
+
+        except asyncio.TimeoutError as err:
+            raise Exception("Authentication timed out") from err
+        except Exception as err:
+            _LOGGER.exception("Authentication failed")
+            raise
 
     async def execute_gql(self, query: str, variables: dict = None) -> dict:
         """Execute a GraphQL query."""
         if not self._token:
             await self.authenticate()
 
-        async with async_timeout.timeout(10):
-            response = await self._session.post(
-                self._endpoint,
-                json={"query": query, "variables": variables or {}},
-                headers=self._headers,
-            )
-            
-            if response.status == 401:
-                # Token expired, re-authenticate
-                await self.authenticate()
-                return await self.execute_gql(query, variables)
-            
-            if response.status != 200:
-                raise Exception(f"Query failed: {response.status}")
-            
-            data = await response.json()
-            if "errors" in data:
-                raise Exception(f"Query failed: {data['errors']}")
-            
-            return data["data"] 
+        try:
+            async with async_timeout.timeout(10):
+                response = await self._session.post(
+                    self._endpoint,
+                    json={"query": query, "variables": variables or {}},
+                    headers=self._headers,
+                )
+                
+                if response.status == 401:
+                    # Token expired, re-authenticate
+                    await self.authenticate()
+                    return await self.execute_gql(query, variables)
+                
+                if response.status != 200:
+                    response_text = await response.text()
+                    raise Exception(f"Query failed: {response.status} - {response_text}")
+                
+                data = await response.json()
+                if "errors" in data:
+                    raise Exception(f"Query failed: {data['errors']}")
+                
+                return data["data"]
+        except Exception as err:
+            _LOGGER.exception("Failed to execute GraphQL query")
+            raise 
