@@ -5,7 +5,7 @@ Deze custom component voor Home Assistant maakt directe verbinding met de Tibber
 ## Functionaliteiten
 
 - Direct verbinding met Tibber GraphAPI via username/password authenticatie
-- Automatische token vernieuwing
+- Automatische token vernieuwing (vereist speciale configuratie, zie Automatiseringen)
 - Real-time voertuig informatie:
   - Batterijniveau (%)
   - Bereik (km)
@@ -14,6 +14,7 @@ Deze custom component voor Home Assistant maakt directe verbinding met de Tibber
   - Verbindingsstatus
 - Mogelijkheid om SoC (State of Charge) handmatig in te stellen
 - Ondersteuning voor meerdere voertuigen
+- Mogelijkheid om aangepaste SoC waarden te sturen voor laadbeheersing
 
 ## Installatie
 
@@ -77,18 +78,65 @@ Voorbeeld voor gebruik in een automatisering:
 ```yaml
 service: tibber_graphapi.set_vehicle_soc
 data:
-  vehicle_id: "jouw-vehicle-id"
-  home_id: "jouw-home-id"
+  vehicle_id: !secret tibber_vehicle_id
+  home_id: !secret tibber_home_id
   battery_level: 80
 ```
 
 De vehicle_id en home_id kun je vinden in de attributen van de batterij sensor na installatie.
+
+## Automatiseringen
+
+### Token Vernieuwing en SoC Aanpassing
+
+De integratie vereist regelmatige token vernieuwing (ongeveer elke 20 uur). Hier is een voorbeeld van een automatisering die dit regelt en tegelijk de SoC aanpast voor laadbeheersing:
+
+```yaml
+alias: "Tibber SoC bijwerken bij verbinding"
+description: "Verhoogt de SoC met 20% voor Tibber wanneer de auto wordt aangesloten"
+trigger:
+  - platform: state
+    entity_id: sensor.jouw_laadpaal_status
+    from: Disconnected
+action:
+  # Eerst de Tibber integratie herladen om een nieuwe token te krijgen
+  - service: homeassistant.reload_config_entry
+    target:
+      entity_id: sensor.vehicle_battery_level
+  # Even wachten om de herlaadactie te laten voltooien
+  - delay: "00:00:05"
+  # Dan de hoofdactie met hele getallen
+  - service: tibber_graphapi.set_vehicle_soc
+    data:
+      vehicle_id: !secret tibber_vehicle_id
+      home_id: !secret tibber_home_id
+      battery_level: >-
+        {% set soc = states('sensor.jouw_auto_soc') | float(default=0) | int %}
+        {% set adjusted_soc = (soc + 20) | int %}
+        {{ [adjusted_soc, 100] | min }}
+mode: single
+```
+
+Deze automatisering:
+1. Triggert wanneer de auto wordt aangesloten
+2. Herlaadt de Tibber integratie voor een nieuwe token
+3. Wacht 5 seconden voor de token vernieuwing
+4. Leest de huidige SoC
+5. Verhoogt deze met 20% (maximum 100%)
+6. Stuurt de aangepaste waarde naar Tibber
+
+Dit kan worden gebruikt om:
+- De token vernieuwing te automatiseren
+- De maximale laadcapaciteit te beperken (bijv. stoppen bij 80% door 20% op te tellen)
+- Laadgedrag te optimaliseren zonder de auto-instellingen aan te passen
 
 ## Bekende Beperkingen
 
 - Tibber GraphAPI update SoC en bereik alleen als het voertuig verbonden en aan het laden is
 - Waarden updaten mogelijk niet direct bij laden op andere locaties
 - EVCC laadstatus codes zijn geschat vanwege inconsistente API data
+- Token verloopt na ongeveer 20 uur en vereist hernieuwing
+- Automatische token vernieuwing werkt alleen met specifieke automatisering
 
 ## Probleemoplossing
 
@@ -97,14 +145,18 @@ De vehicle_id en home_id kun je vinden in de attributen van de batterij sensor n
 1. **Authenticatie fout**
    - Controleer of je gebruikersnaam en wachtwoord correct zijn
    - Zorg dat je account actief is en toegang heeft tot een voertuig
+   - Gebruik de automatisering met token vernieuwing
+   - Herlaad de integratie handmatig via de UI
 
 2. **Geen data updates**
    - Controleer of je voertuig correct is gekoppeld in de Tibber app
    - Verifieer of de voertuig index correct is als je meerdere voertuigen hebt
+   - Controleer of de token nog geldig is
 
 3. **Service werkt niet**
    - Controleer of je de juiste vehicle_id en home_id gebruikt
    - Kijk in de Home Assistant logs voor specifieke foutmeldingen
+   - Zorg dat de token vernieuwing correct werkt
 
 ### Debug Logging
 
