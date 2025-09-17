@@ -1,10 +1,10 @@
 {
     "domain": "tibber_graphapi",
-    "name": "Tibber GraphAPI",
+    "name": "Tibber Update SOC",
     "codeowners": ["@Elibart-home"],
     "config_flow": true,
     "dependencies": [],
-    "documentation": "https://github.com/Elibart-home/ha-tibber-graphapi",
+    "documentation": "https://github.com/Elibart-home/tibber_graphapi",
     "iot_class": "cloud_polling",
     "requirements": [
         "aiohttp>=3.8.0"

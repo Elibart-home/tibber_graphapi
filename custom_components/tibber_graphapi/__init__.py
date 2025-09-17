@@ -29,6 +29,8 @@ from .const import (
     ATTR_BATTERY_LEVEL,
 )
 
+__all__ = ["TibberGraphAPI"]
+
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]

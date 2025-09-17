@@ -35,27 +35,49 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         await api.authenticate()
         _LOGGER.debug("Authentication successful")
 
-        # Then try to get vehicles to verify we have access
-        result = await api.execute_gql("""
-            query getVehicles {
-                me {
-                    myVehicles {
-                        vehicles {
-                            id
-                            title
-                        }
+        # First get home ID, then get vehicles to verify we have access
+        homes = await api.execute_gql("""
+            query {
+                viewer {
+                    homes {
+                        id
                     }
                 }
             }
         """)
         
+        if not homes.get("viewer", {}).get("homes"):
+            _LOGGER.error("No homes found in Tibber account")
+            raise Exception("No homes found")
+            
+        home_id = homes["viewer"]["homes"][0]["id"]
+        
+        # Then try to get vehicles to verify we have access
+        result = await api.execute_gql("""
+            query GetVehicle($homeId: ID!) {
+                viewer {
+                    home(id: $homeId) {
+                        id
+                        vehicles {
+                            id
+                            batteryLevel
+                            range
+                            connected
+                            charging
+                            chargingPower
+                        }
+                    }
+                }
+            }
+        """, {"homeId": home_id})
+        
         _LOGGER.debug("Vehicles query response: %s", result)
         
-        if not result.get("me", {}).get("myVehicles", {}).get("vehicles"):
+        if not result.get("viewer", {}).get("home", {}).get("vehicles"):
             _LOGGER.error("No vehicles found in Tibber account")
             raise Exception("No vehicles found")
             
-        vehicles = result["me"]["myVehicles"]["vehicles"]
+        vehicles = result["viewer"]["home"]["vehicles"]
         vehicle_index = data.get(CONF_VEHICLE_INDEX, DEFAULT_VEHICLE_INDEX)
         
         if vehicle_index >= len(vehicles):
@@ -67,8 +89,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         
         # Return info that you want to store in the config entry.
         return {
-            "title": vehicle["title"],
-            "vehicle_id": vehicle["id"]
+            "title": f"Vehicle {vehicle_index + 1}",
+            "vehicle_id": vehicle["id"],
+            "home_id": home_id
         }
 
     except Exception as err:

@@ -22,7 +22,7 @@ Deze custom component voor Home Assistant maakt directe verbinding met de Tibber
 1. Open HACS in Home Assistant
 2. Ga naar "Integraties"
 3. Klik op de drie puntjes rechtsboven en kies "Custom repositories"
-4. Voeg deze repository URL toe: `https://github.com/Elibart-home/ha-tibber-graphapi`
+4. Voeg deze repository URL toe: `https://github.com/Elibart-home/tibber_graphapi`
 5. Kies categorie "Integratie"
 6. Installeer de "Tibber GraphAPI" integratie
 7. Herstart Home Assistant
@@ -173,7 +173,7 @@ logger:
 
 Bijdragen zijn welkom! Als je een bug vindt of een verbetering wilt voorstellen:
 
-1. Open een issue op de [GitHub repository](https://github.com/Elibart-home/ha-tibber-graphapi/issues)
+1. Open een issue op de [GitHub repository](https://github.com/Elibart-home/tibber_graphapi/issues)
 2. Fork de repository
 3. Maak je wijzigingen
 4. Dien een Pull Request in
