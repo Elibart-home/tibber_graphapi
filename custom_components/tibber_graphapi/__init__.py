@@ -6,6 +6,7 @@ import asyncio
 import aiohttp
 import async_timeout
 import voluptuous as vol
+from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
@@ -33,7 +34,7 @@ __all__ = ["TibberGraphAPI"]
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = []  # No platforms, service-only integration
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -104,14 +105,29 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.services.async_register(DOMAIN, "set_vehicle_soc", set_vehicle_soc)
 
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    # Set up periodic token refresh (every 18 hours)
+    async def refresh_token():
+        """Periodically refresh the authentication token."""
+        try:
+            await api.authenticate()
+            _LOGGER.debug("Token refreshed successfully")
+        except Exception as err:
+            _LOGGER.error("Failed to refresh token: %s", err)
+
+    # Schedule token refresh every 18 hours (64800 seconds)
+    hass.helpers.event.async_track_time_interval(
+        refresh_token, 
+        timedelta(hours=18)
+    )
+
+    # No platforms to setup for service-only integration
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
-    return unload_ok
+    # Service-only integration, just clean up data
+    hass.data[DOMAIN].pop(entry.entry_id)
+    return True
 
 class TibberGraphAPI:
     """Handle all communication with the Tibber GraphAPI."""
@@ -127,6 +143,7 @@ class TibberGraphAPI:
         self._username = username
         self._password = password
         self._token = None
+        self._token_expires_at = None
         self._headers = {
             "Accept-Language": "en",
             "x-tibber-new-ui": "true",
@@ -158,7 +175,14 @@ class TibberGraphAPI:
                     self._headers["Content-Type"] = "application/json"
                     self._headers["Authorization"] = f"Bearer {data['token']}"
                     self._token = data["token"]
-                    _LOGGER.debug("Successfully authenticated with Tibber")
+                    
+                    # Set token expiry (JWT tokens typically expire in 20 hours)
+                    # We'll refresh 1 hour before expiry to be safe
+                    import time
+                    self._token_expires_at = time.time() + (19 * 3600)  # 19 hours from now
+                    
+                    _LOGGER.debug("Successfully authenticated with Tibber, token expires at: %s", 
+                                 self._token_expires_at)
                 else:
                     response_text = await response.text()
                     raise Exception(f"Authentication failed: {response.status} - {response_text}")
@@ -171,7 +195,11 @@ class TibberGraphAPI:
 
     async def execute_gql(self, query: str, variables: dict = None) -> dict:
         """Execute a GraphQL query."""
-        if not self._token:
+        import time
+        
+        # Check if token needs refresh (1 hour before expiry)
+        if not self._token or (self._token_expires_at and time.time() >= self._token_expires_at):
+            _LOGGER.debug("Token expired or missing, refreshing authentication")
             await self.authenticate()
 
         try:
@@ -183,9 +211,14 @@ class TibberGraphAPI:
                 )
                 
                 if response.status == 401:
-                    # Token expired, re-authenticate
+                    # Token expired, re-authenticate and retry once
+                    _LOGGER.debug("Received 401, refreshing token and retrying")
                     await self.authenticate()
-                    return await self.execute_gql(query, variables)
+                    response = await self._session.post(
+                        self._endpoint,
+                        json={"query": query, "variables": variables or {}},
+                        headers=self._headers,
+                    )
                 
                 if response.status != 200:
                     response_text = await response.text()

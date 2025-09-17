@@ -35,91 +35,29 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         await api.authenticate()
         _LOGGER.debug("Authentication successful")
 
-        # Try to get schema information first
+        # For service-only integration, we just need to verify authentication
+        # The actual vehicle_id and home_id will be provided when calling the service
         try:
-            # Test with a simple introspection query to see available fields
-            schema_test = await api.execute_gql("""
-                query {
-                    __schema {
-                        queryType {
-                            fields {
-                                name
-                            }
-                        }
-                    }
-                }
-            """)
-            _LOGGER.debug("Schema test response: %s", schema_test)
-        except Exception as e:
-            _LOGGER.debug("Schema introspection failed: %s", e)
-        
-        # Try different query structures based on reverse engineering notes
-        try:
-            # Try the 'me' structure as mentioned in reverse engineering
-            result = await api.execute_gql("""
+            # Simple test to verify authentication works
+            user_info = await api.execute_gql("""
                 query {
                     me {
-                        homes {
-                            id
-                            vehicles {
-                                id
-                                batteryLevel
-                                range
-                                connected
-                                charging
-                                chargingPower
-                            }
-                        }
+                        id
                     }
                 }
             """)
             
-            _LOGGER.debug("Me query response: %s", result)
+            _LOGGER.debug("Authentication test successful: %s", user_info)
             
-            if not result.get("me", {}).get("homes"):
-                _LOGGER.error("No homes found in Tibber account")
-                raise Exception("No homes found")
+            # Return basic info for the config entry
+            return {
+                "title": "Tibber SOC Updater",
+                "user_id": user_info.get("me", {}).get("id", "unknown")
+            }
                 
-            homes = result["me"]["homes"]
-            home_id = homes[0]["id"]
-            
-            if not homes[0].get("vehicles"):
-                _LOGGER.error("No vehicles found in Tibber account")
-                raise Exception("No vehicles found")
-                
-            vehicles = homes[0]["vehicles"]
-            
         except Exception as e:
-            _LOGGER.debug("Me query failed: %s", e)
-            # Fallback: try to get basic user info
-            try:
-                user_info = await api.execute_gql("""
-                    query {
-                        me {
-                            id
-                        }
-                    }
-                """)
-                _LOGGER.debug("User info response: %s", user_info)
-                raise Exception("Could not access vehicle data - check if vehicle is properly connected in Tibber app")
-            except Exception as e2:
-                _LOGGER.debug("User info query also failed: %s", e2)
-                raise Exception("Authentication successful but cannot access vehicle data")
-        vehicle_index = data.get(CONF_VEHICLE_INDEX, DEFAULT_VEHICLE_INDEX)
-        
-        if vehicle_index >= len(vehicles):
-            _LOGGER.error("Vehicle index %d is out of range (max: %d)", 
-                         vehicle_index, len(vehicles) - 1)
-            raise Exception("Invalid vehicle index")
-
-        vehicle = vehicles[vehicle_index]
-        
-        # Return info that you want to store in the config entry.
-        return {
-            "title": f"Vehicle {vehicle_index + 1}",
-            "vehicle_id": vehicle["id"],
-            "home_id": home_id
-        }
+            _LOGGER.debug("Authentication test failed: %s", e)
+            raise Exception("Could not verify Tibber account access")
 
     except Exception as err:
         _LOGGER.exception("Validation failed: %s", err)
