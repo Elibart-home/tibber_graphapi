@@ -35,49 +35,76 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         await api.authenticate()
         _LOGGER.debug("Authentication successful")
 
-        # First get home ID, then get vehicles to verify we have access
-        homes = await api.execute_gql("""
-            query {
-                viewer {
-                    homes {
-                        id
-                    }
-                }
-            }
-        """)
-        
-        if not homes.get("viewer", {}).get("homes"):
-            _LOGGER.error("No homes found in Tibber account")
-            raise Exception("No homes found")
-            
-        home_id = homes["viewer"]["homes"][0]["id"]
-        
-        # Then try to get vehicles to verify we have access
-        result = await api.execute_gql("""
-            query GetVehicle($homeId: ID!) {
-                viewer {
-                    home(id: $homeId) {
-                        id
-                        vehicles {
-                            id
-                            batteryLevel
-                            range
-                            connected
-                            charging
-                            chargingPower
+        # Try to get schema information first
+        try:
+            # Test with a simple introspection query to see available fields
+            schema_test = await api.execute_gql("""
+                query {
+                    __schema {
+                        queryType {
+                            fields {
+                                name
+                            }
                         }
                     }
                 }
-            }
-        """, {"homeId": home_id})
+            """)
+            _LOGGER.debug("Schema test response: %s", schema_test)
+        except Exception as e:
+            _LOGGER.debug("Schema introspection failed: %s", e)
         
-        _LOGGER.debug("Vehicles query response: %s", result)
-        
-        if not result.get("viewer", {}).get("home", {}).get("vehicles"):
-            _LOGGER.error("No vehicles found in Tibber account")
-            raise Exception("No vehicles found")
+        # Try different query structures based on reverse engineering notes
+        try:
+            # Try the 'me' structure as mentioned in reverse engineering
+            result = await api.execute_gql("""
+                query {
+                    me {
+                        homes {
+                            id
+                            vehicles {
+                                id
+                                batteryLevel
+                                range
+                                connected
+                                charging
+                                chargingPower
+                            }
+                        }
+                    }
+                }
+            """)
             
-        vehicles = result["viewer"]["home"]["vehicles"]
+            _LOGGER.debug("Me query response: %s", result)
+            
+            if not result.get("me", {}).get("homes"):
+                _LOGGER.error("No homes found in Tibber account")
+                raise Exception("No homes found")
+                
+            homes = result["me"]["homes"]
+            home_id = homes[0]["id"]
+            
+            if not homes[0].get("vehicles"):
+                _LOGGER.error("No vehicles found in Tibber account")
+                raise Exception("No vehicles found")
+                
+            vehicles = homes[0]["vehicles"]
+            
+        except Exception as e:
+            _LOGGER.debug("Me query failed: %s", e)
+            # Fallback: try to get basic user info
+            try:
+                user_info = await api.execute_gql("""
+                    query {
+                        me {
+                            id
+                        }
+                    }
+                """)
+                _LOGGER.debug("User info response: %s", user_info)
+                raise Exception("Could not access vehicle data - check if vehicle is properly connected in Tibber app")
+            except Exception as e2:
+                _LOGGER.debug("User info query also failed: %s", e2)
+                raise Exception("Authentication successful but cannot access vehicle data")
         vehicle_index = data.get(CONF_VEHICLE_INDEX, DEFAULT_VEHICLE_INDEX)
         
         if vehicle_index >= len(vehicles):

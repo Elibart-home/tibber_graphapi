@@ -93,24 +93,24 @@ class TibberVehicleDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         if not self._home_id:
-            # First run, get home ID
+            # First run, get home ID using the 'me' structure
             homes = await self.api.execute_gql("""
                 query {
-                    viewer {
+                    me {
                         homes {
                             id
                         }
                     }
                 }
             """)
-            self._home_id = homes["viewer"]["homes"][0]["id"]
+            self._home_id = homes["me"]["homes"][0]["id"]
 
         vehicle_data = await self.api.execute_gql(
             QUERY_GET_VEHICLE,
             {"homeId": self._home_id},
         )
 
-        vehicle = vehicle_data["viewer"]["home"]["vehicles"][self.vehicle_index]
+        vehicle = vehicle_data["me"]["home"]["vehicles"][self.vehicle_index]
         self._vehicle_id = vehicle["id"]
 
         return {

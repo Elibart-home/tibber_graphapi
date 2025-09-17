@@ -19,7 +19,7 @@ ATTR_CONNECTED = "connected"
 # GraphQL Queries
 QUERY_GET_VEHICLE = """
 query GetVehicle($homeId: ID!) {
-    viewer {
+    me {
         home(id: $homeId) {
             id
             vehicles {
