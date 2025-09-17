@@ -15,6 +15,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 
 from .const import (
     DOMAIN,
@@ -95,7 +96,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.error("Failed to refresh token: %s", err)
 
     # Schedule token refresh every 18 hours (64800 seconds)
-    hass.helpers.event.async_track_time_interval(
+    async_track_time_interval(
+        hass,
         refresh_token, 
         timedelta(hours=18)
     )
