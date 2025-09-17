@@ -5,25 +5,19 @@ import logging
 import asyncio
 import aiohttp
 import async_timeout
-import voluptuous as vol
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
-    CONF_SCAN_INTERVAL,
     Platform,
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-import homeassistant.helpers.config_validation as cv
 
 from .const import (
     DOMAIN,
-    DEFAULT_SCAN_INTERVAL,
-    CONF_VEHICLE_INDEX,
-    DEFAULT_VEHICLE_INDEX,
     MUTATION_SET_VEHICLE_SOC,
     ATTR_VEHICLE_ID,
     ATTR_HOME_ID,
@@ -36,21 +30,7 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = []  # No platforms, service-only integration
 
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: vol.Schema(
-            {
-                vol.Required(CONF_USERNAME): cv.string,
-                vol.Required(CONF_PASSWORD): cv.string,
-                vol.Optional(CONF_VEHICLE_INDEX, default=DEFAULT_VEHICLE_INDEX): cv.positive_int,
-                vol.Optional(
-                    CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL
-                ): cv.positive_int,
-            }
-        )
-    },
-    extra=vol.ALLOW_EXTRA,
-)
+# Service-only integration, no config schema needed
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tibber GraphAPI from a config entry."""

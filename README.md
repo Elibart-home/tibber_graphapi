@@ -1,20 +1,14 @@
-# Tibber GraphAPI Integration for Home Assistant
+# Tibber SOC Updater for Home Assistant
 
-Deze custom component voor Home Assistant maakt directe verbinding met de Tibber GraphAPI mogelijk, specifiek gericht op het uitlezen en besturen van elektrische voertuigen. De integratie gebruikt directe authenticatie met je Tibber account, onafhankelijk van de officiële Tibber integratie.
+Deze custom component voor Home Assistant maakt het mogelijk om de State of Charge (SOC) van je elektrische voertuig in te stellen via de Tibber GraphAPI. Deze integratie werkt samen met de bestaande [Tibber GraphAPI integratie](https://github.com/marq24/ha-tibber-graphapi) voor het ophalen van sensor data.
 
 ## Functionaliteiten
 
-- Direct verbinding met Tibber GraphAPI via username/password authenticatie
-- Automatische token vernieuwing (vereist speciale configuratie, zie Automatiseringen)
-- Real-time voertuig informatie:
-  - Batterijniveau (%)
-  - Bereik (km)
-  - Laadvermogen (kW)
-  - Laadstatus
-  - Verbindingsstatus
-- Mogelijkheid om SoC (State of Charge) handmatig in te stellen
-- Ondersteuning voor meerdere voertuigen
-- Mogelijkheid om aangepaste SoC waarden te sturen voor laadbeheersing
+- **Service-only integratie** - Geen sensoren, alleen SOC update functionaliteit
+- **Automatische token vernieuwing** - Houdt verbinding stabiel via keepalive mechanisme
+- **SOC Update Service** - Stel de State of Charge van je voertuig in via `tibber_graphapi.set_vehicle_soc`
+- **Stabiele verbinding** - Geen "connection lost" errors meer
+- **Werkt samen** met de bestaande Tibber GraphAPI integratie voor sensor data
 
 ## Installatie
 
@@ -24,7 +18,7 @@ Deze custom component voor Home Assistant maakt directe verbinding met de Tibber
 3. Klik op de drie puntjes rechtsboven en kies "Custom repositories"
 4. Voeg deze repository URL toe: `https://github.com/Elibart-home/tibber_graphapi`
 5. Kies categorie "Integratie"
-6. Installeer de "Tibber GraphAPI" integratie
+6. Installeer de "Tibber SOC Updater" integratie
 7. Herstart Home Assistant
 
 ### Handmatige installatie
@@ -36,12 +30,10 @@ Deze custom component voor Home Assistant maakt directe verbinding met de Tibber
 
 1. Ga naar Configuratie > Integraties
 2. Klik op "Integratie toevoegen"
-3. Zoek naar "Tibber GraphAPI"
+3. Zoek naar "Tibber SOC Updater"
 4. Vul de volgende gegevens in:
    - Tibber gebruikersnaam (e-mail)
    - Tibber wachtwoord
-   - Voertuig index (optioneel, standaard 0)
-   - Update interval (optioneel, standaard 60 seconden)
 
 ## Sensoren
 
