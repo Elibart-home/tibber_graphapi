@@ -130,7 +130,7 @@ class TibberGraphAPI:
         self._headers = {
             "Accept-Language": "en",
             "x-tibber-new-ui": "true",
-            "User-Agent": "Tibber/25.16.0 (versionCode: 2516001Dalvik/2.1.0 (Linux; U; Android 10; Android SDK built for x86_64 Build/QSR1.211112.011))",
+            "User-Agent": "Tibber/25.20.0 (versionCode: 2520004Dalvik/2.1.0 (Linux; U; Android 10; Android SDK built for x86_64 Build/QSR1.211112.011))",
             "Content-Type": "application/x-www-form-urlencoded"
         }
         self._endpoint = "https://app.tibber.com/v4/gql"
@@ -155,8 +155,8 @@ class TibberGraphAPI:
                     data = await response.json()
                     
                     # Update headers for subsequent GraphQL requests
-                    self._headers["Content-Type"] = "application/json; charset=utf-8"
-                    self._headers["Authorization"] = data["token"]
+                    self._headers["Content-Type"] = "application/json"
+                    self._headers["Authorization"] = f"Bearer {data['token']}"
                     self._token = data["token"]
                     _LOGGER.debug("Successfully authenticated with Tibber")
                 else:
