@@ -54,9 +54,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register service
     async def set_vehicle_soc(call: ServiceCall) -> None:
         """Set vehicle state of charge."""
-        vehicle_id = call.data[ATTR_VEHICLE_ID]
-        home_id = call.data[ATTR_HOME_ID]
-        battery_level = call.data[ATTR_BATTERY_LEVEL]
+        _LOGGER.debug("Service called with data: %s", call.data)
+        
+        vehicle_id = call.data.get(ATTR_VEHICLE_ID) or call.data.get("vehicle_id")
+        home_id = call.data.get(ATTR_HOME_ID) or call.data.get("home_id")
+        battery_level = call.data.get(ATTR_BATTERY_LEVEL) or call.data.get("battery_level")
+        
+        _LOGGER.debug("Parsed parameters - vehicle_id: %s, home_id: %s, battery_level: %s", 
+                     vehicle_id, home_id, battery_level)
+        
+        # Validate required parameters
+        if not vehicle_id:
+            _LOGGER.error("Missing required parameter: vehicle_id")
+            return
+        if not home_id:
+            _LOGGER.error("Missing required parameter: home_id")
+            return
+        if battery_level is None:
+            _LOGGER.error("Missing required parameter: battery_level")
+            return
 
         try:
             await api.execute_gql(
