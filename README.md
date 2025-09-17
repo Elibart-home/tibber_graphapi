@@ -16,14 +16,14 @@ Deze custom component voor Home Assistant maakt het mogelijk om de State of Char
 1. Open HACS in Home Assistant
 2. Ga naar "Integraties"
 3. Klik op de drie puntjes rechtsboven en kies "Custom repositories"
-4. Voeg deze repository URL toe: `https://github.com/Elibart-home/tibber_graphapi`
+4. Voeg deze repository URL toe: `https://github.com/Elibart-home/tibber-vehicle-soc-updater`
 5. Kies categorie "Integratie"
 6. Installeer de "Tibber SOC Updater" integratie
 7. Herstart Home Assistant
 
 ### Handmatige installatie
 1. Download de laatste release van deze repository
-2. Kopieer de map `custom_components/tibber_graphapi` naar je Home Assistant config directory
+2. Kopieer de map `custom_components/tibber_soc_updater` naar je Home Assistant config directory
 3. Herstart Home Assistant
 
 ## Configuratie
@@ -158,14 +158,14 @@ Om debug logging in te schakelen, voeg het volgende toe aan je `configuration.ya
 logger:
   default: info
   logs:
-    custom_components.tibber_graphapi: debug
+    custom_components.tibber_soc_updater: debug
 ```
 
 ## Bijdragen
 
 Bijdragen zijn welkom! Als je een bug vindt of een verbetering wilt voorstellen:
 
-1. Open een issue op de [GitHub repository](https://github.com/Elibart-home/tibber_graphapi/issues)
+1. Open een issue op de [GitHub repository](https://github.com/Elibart-home/tibber-vehicle-soc-updater/issues)
 2. Fork de repository
 3. Maak je wijzigingen
 4. Dien een Pull Request in
