@@ -6,7 +6,7 @@ Deze custom component voor Home Assistant maakt het mogelijk om de State of Char
 
 - **Service-only integratie** - Geen sensoren, alleen SOC update functionaliteit
 - **Automatische token vernieuwing** - Houdt verbinding stabiel via keepalive mechanisme
-- **SOC Update Service** - Stel de State of Charge van je voertuig in via `tibber_graphapi.set_vehicle_soc`
+- **SOC Update Service** - Stel de State of Charge van je voertuig in via `tibber_soc_updater.set_vehicle_soc`
 - **Stabiele verbinding** - Geen "connection lost" errors meer
 - **Werkt samen** met de bestaande Tibber GraphAPI integratie voor sensor data
 
@@ -59,7 +59,7 @@ De integratie maakt drie sensoren aan:
 
 Met deze service kun je de SoC (State of Charge) van je voertuig instellen in Tibber.
 
-Service: `tibber_graphapi.set_vehicle_soc`
+Service: `tibber_soc_updater.set_vehicle_soc`
 
 Parameters:
 - `vehicle_id`: ID van het voertuig (verplicht)
@@ -68,7 +68,7 @@ Parameters:
 
 Voorbeeld voor gebruik in een automatisering:
 ```yaml
-service: tibber_graphapi.set_vehicle_soc
+service: tibber_soc_updater.set_vehicle_soc
 data:
   vehicle_id: !secret tibber_vehicle_id
   home_id: !secret tibber_home_id
@@ -98,7 +98,7 @@ action:
   # Even wachten om de herlaadactie te laten voltooien
   - delay: "00:00:05"
   # Dan de hoofdactie met hele getallen
-  - service: tibber_graphapi.set_vehicle_soc
+  - service: tibber_soc_updater.set_vehicle_soc
     data:
       vehicle_id: !secret tibber_vehicle_id
       home_id: !secret tibber_home_id

@@ -1,6 +1,6 @@
 """Constants for the Tibber GraphAPI integration."""
 
-DOMAIN = "tibber_graphapi"
+DOMAIN = "tibber_soc_updater"
 DEFAULT_SCAN_INTERVAL = 60  # seconds
 DEFAULT_VEHICLE_INDEX = 0
 
