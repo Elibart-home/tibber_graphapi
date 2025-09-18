@@ -4,10 +4,10 @@
     "codeowners": ["@Elibart-home"],
     "config_flow": true,
     "dependencies": [],
-    "documentation": "https://github.com/Elibart-home/tibber-vehicle-soc-updater",
+    "documentation": "https://github.com/Elibart-home/tibber_soc_updater",
     "iot_class": "cloud_polling",
     "requirements": [
         "aiohttp>=3.8.0"
     ],
-    "version": "1.0.0"
+    "version": "2.1.0"
 } 
