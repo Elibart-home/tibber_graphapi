@@ -195,7 +195,14 @@ Bijdragen zijn welkom! Als je een bug vindt of een verbetering wilt voorstellen:
 
 ### Changelog
 
-**v2.1 (Latest)**
+**v2.1.1 (Latest)**
+- ✅ Fix endpoint testing warnings - Geen verwarrende berichten meer
+- ✅ Verbeterde GraphQL endpoint testing met POST requests
+- ✅ Betere logging op debug level
+- ✅ Correcte versie informatie voor Home Assistant
+- ✅ Toegevoegd integration_type in manifest.json
+
+**v2.1.0**
 - ✅ Geforceerd gebruik van primaire GraphQL endpoint
 - ✅ Automatische endpoint discovery
 - ✅ Meerdere authenticatie methoden
@@ -203,7 +210,7 @@ Bijdragen zijn welkom! Als je een bug vindt of een verbetering wilt voorstellen:
 - ✅ JWT token scope validatie
 - ✅ Verbeterde error handling en logging
 
-**v2.0**
+**v2.0.0**
 - ✅ Reverse engineering implementatie
 - ✅ Correcte API headers
 - ✅ Automatische token vernieuwing
