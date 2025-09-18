@@ -7,6 +7,10 @@ import aiohttp
 import async_timeout
 from datetime import timedelta
 
+# Version information
+__version__ = "2.1.1"
+__version_info__ = (2, 1, 1)
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_USERNAME,
