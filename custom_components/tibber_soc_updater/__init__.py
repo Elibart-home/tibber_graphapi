@@ -176,33 +176,38 @@ class TibberGraphAPI:
         """Test if an endpoint is accessible."""
         try:
             async with async_timeout.timeout(5):
-                response = await self._session.get(url, headers=self._headers)
-                return response.status in [200, 404, 405]  # 404/405 are OK, means endpoint exists but method wrong
+                # For GraphQL endpoints, try a simple POST request
+                if "gql" in url:
+                    response = await self._session.post(
+                        url, 
+                        json={"query": "query { __typename }"},
+                        headers={**self._headers, "Content-Type": "application/json"}
+                    )
+                    # Accept 200 (success) or 401 (auth required) as valid responses
+                    return response.status in [200, 401]
+                else:
+                    # For login endpoints, try GET
+                    response = await self._session.get(url, headers=self._headers)
+                    return response.status in [200, 404, 405]  # 404/405 are OK, means endpoint exists but method wrong
         except Exception:
             return False
 
     async def _find_working_endpoints(self) -> tuple[str, str]:
         """Find working login and GraphQL endpoints."""
-        _LOGGER.debug("Testing alternative endpoints...")
+        _LOGGER.debug("Testing endpoint accessibility...")
         
-        # Always use the primary login endpoint first (most reliable)
+        # Always use the primary endpoints (most reliable)
         login_url = self._login_url
-        _LOGGER.info("Using primary login endpoint: %s", login_url)
-        
-        # Always use the primary GraphQL endpoint (most reliable)
         endpoint = self._endpoint
-        _LOGGER.info("Using primary GraphQL endpoint: %s", endpoint)
+        
+        _LOGGER.debug("Using primary login endpoint: %s", login_url)
+        _LOGGER.debug("Using primary GraphQL endpoint: %s", endpoint)
         
         # Test if the primary GraphQL endpoint is accessible
-        if not await self._test_endpoint(endpoint):
-            _LOGGER.warning("Primary GraphQL endpoint not accessible, testing alternatives...")
-            for alt_endpoint in self._alternative_endpoints:
-                if alt_endpoint != endpoint and await self._test_endpoint(alt_endpoint):
-                    _LOGGER.info("Found working alternative GraphQL endpoint: %s", alt_endpoint)
-                    endpoint = alt_endpoint
-                    break
-            else:
-                _LOGGER.warning("No working GraphQL endpoints found, using primary anyway")
+        if await self._test_endpoint(endpoint):
+            _LOGGER.debug("Primary GraphQL endpoint is accessible")
+        else:
+            _LOGGER.debug("Primary GraphQL endpoint test failed, but will use it anyway")
             
         return login_url, endpoint
 
