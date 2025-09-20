@@ -136,6 +136,14 @@ Dit kan worden gebruikt om:
 - **Token verloopt na 18 uur** maar wordt automatisch vernieuwd
 - **API wijzigingen** kunnen tijdelijk problemen veroorzaken (wordt automatisch opgelost)
 
+## ✅ Stabiliteit
+
+De integratie is **getest en stabiel** - geen bekende problemen met:
+- ✅ Authenticatie en token vernieuwing
+- ✅ GraphQL endpoint communicatie  
+- ✅ Automatische retry logica
+- ✅ Error handling en recovery
+
 > **Note:** Deze integratie is een **service-only integratie** - het maakt geen sensoren aan, alleen de `tibber_soc_updater.set_vehicle_soc` service is beschikbaar.
 
 ## 🔧 Probleemoplossing
@@ -201,6 +209,7 @@ Bijdragen zijn welkom! Als je een bug vindt of een verbetering wilt voorstellen:
 - ✅ Betere logging op debug level
 - ✅ Correcte versie informatie voor Home Assistant
 - ✅ Toegevoegd integration_type in manifest.json
+- ✅ **Stabiele werking** - Getest en bevestigd stabiel na 24+ uur gebruik
 
 **v2.1.0**
 - ✅ Geforceerd gebruik van primaire GraphQL endpoint
